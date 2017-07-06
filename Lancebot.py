@@ -649,7 +649,7 @@ Vous êtes prié de vous rendre sur le serveur dans les plus brefs délais et de
         requester = ctx.message.author
         await self.bot.delete_message(ctx.message)
         if requester.id == '187565415512276993':
-            await self.bot.send_message(bot.get_channel('328263588911251456'), "```Déconnection du bot```")
+            await self.bot.send_message(bot.get_channel('330033804330663937'), "```Déconnection du bot```")
             print('[FTS] Déconnexion...')
             bot.logout()
             print('[FTS] Logged out')
@@ -1364,7 +1364,7 @@ async def on_server_emojis_update(before, after):
         Embed = discord.Embed()
         Embed.colour = 0x3498db
         Embed.description = Emoji
-        await bot.send_message(bot.get_channel('328262970364788738'), "Nouvel emoji !", embed = Embed)
+        await bot.send_message(bot.get_channel('328263588911251456'), "Nouvel emoji !", embed = Embed)
 
 @bot.event
 async def on_ready():
