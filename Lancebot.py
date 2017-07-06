@@ -649,7 +649,7 @@ Vous êtes prié de vous rendre sur le serveur dans les plus brefs délais et de
         requester = ctx.message.author
         await self.bot.delete_message(ctx.message)
         if requester.id == '187565415512276993':
-            await self.bot.send_message(bot.get_channel('283397577552953344'), "```Déconnection du bot```")
+            await self.bot.send_message(bot.get_channel('328263588911251456'), "```Déconnection du bot```")
             print('[FTS] Déconnexion...')
             bot.logout()
             print('[FTS] Logged out')
@@ -1291,10 +1291,10 @@ class FEH:
             perso = feh.getFromData(self.data, user.id)
 
             bar = "+---------------+-----------------------------------------+\n"
-            msg = "```\n" + bar + "|{0:^15}| {1:^40}|\n".format("Title", "Value") + bar
+            msg = "```\n" + bar + "|{0:^15}| {1:^100}|\n".format("Title", "Value") + bar
 
             for name, value in zip(perso.names, perso.values):
-                fmt = "|{0:^15}| {1:40}|\n".format(str(name), str(value))
+                fmt = "|{0:^15}| {1:100}|\n".format(str(name), str(value))
                 msg += fmt
 
             msg += bar + "```"
@@ -1326,7 +1326,7 @@ bot.add_cog(FEH(bot))
 async def on_member_join(member):
     server = member.server
     fmt = 'Bienvenue à {0.mention} sur {1.name} !'
-    await bot.send_message(server, fmt.format(member, server))
+    await bot.send_message(bot.get_channel('328262970364788738'), fmt.format(member, server))
     rules = getServerRules()
     await bot.send_message(member, rules)
     print('[FTS] {0.name} has joined the server'.format(member))
@@ -1335,20 +1335,20 @@ async def on_member_join(member):
 async def on_member_remove(member):
     server = member.server
     fmt = '{0.mention} est parti-e du serveur {1.name} !'
-    await bot.send_message(server, fmt.format(member, server))
+    await bot.send_message(bot.get_channel('328262970364788738'), fmt.format(member, server))
     print('[FTS] {0.name} has left the server'.format(member))
 
 @bot.event
 async def on_member_ban(member):
     server = member.server
     fmt = '{0.mention} a été banni-e du serveur {1.name} !'
-    await bot.send_message(server, fmt.format(member, server))
+    await bot.send_message(bot.get_channel('328262970364788738'), fmt.format(member, server))
     print('[FTS] {0.name} has been banned of the server'.format(member))
 
 @bot.event
 async def on_member_unban(server, member):
     fmt = "{0.mention} a été pardonné-e, il-elle n'est plus banni-e du serveur {1.name} !"
-    await bot.send_message(server, fmt.format(member, server))
+    await bot.send_message(bot.get_channel('328262970364788738'), fmt.format(member, server))
     print('[FTS] {0.name} has been unbanned of the server'.format(member))
 
 @bot.event
@@ -1364,7 +1364,7 @@ async def on_server_emojis_update(before, after):
         Embed = discord.Embed()
         Embed.colour = 0x3498db
         Embed.description = Emoji
-        await bot.send_message(e.server, "Nouvel emoji !", embed = Embed)
+        await bot.send_message(bot.get_channel('328262970364788738'), "Nouvel emoji !", embed = Embed)
 
 @bot.event
 async def on_ready():
