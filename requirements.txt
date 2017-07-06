@@ -1,0 +1,6 @@
+Python 3.5
+Pip modules installer
+discordpy
+FFMPEG
+youtube_dl
+PyNaCl
