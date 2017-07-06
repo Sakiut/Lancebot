@@ -1302,11 +1302,10 @@ class FEH:
             fehEmbed = discord.Embed()
             fehEmbed.set_author(name = user.name + " ({})".format(user.id), icon_url = user.avatar_url)
             fehEmbed.add_field(name = "Pseudo in-game", value = perso.pseudo, inline = False)
-            fehEmbed.description = msg
             fehEmbed.colour = 0x3498db
             fehEmbed.set_footer(text = "Requested by {0}".format(ctx.message.author.name), icon_url = ctx.message.author.avatar_url)
 
-            await self.bot.say(embed = fehEmbed)
+            await self.bot.say(msg, embed = fehEmbed)
             
         except KeyError as e:
             tmp = await self.bot.say("```py\n{}: {}\n```".format(type(e).__name__, e))
