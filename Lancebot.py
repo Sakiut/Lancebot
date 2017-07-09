@@ -3,6 +3,7 @@
 import asyncio
 import discord
 from discord.ext import commands
+from discord.ext.commands import formatter
 from libraries.perms import *
 from libraries.library import *
 from libraries import anilist
@@ -1290,14 +1291,25 @@ class FEH:
         try:
             perso = feh.getFromData(self.data, user.id)
 
-            bar = "+---------------+-----------------------------------------+\n"
-            msg = "```\n" + bar + "|{0:^15}| {1:^100}|\n".format("Title", "Value") + bar
+            fmt = formatter.Paginator()
+
+            bar = "+---------------+------------------------------------------+"
+            head = "|{0:^15}| {1:^40} |".format("Title", "Value")
+            fmt.add_line(bar)
+            fmt.add_line(head)
+            fmt.add_line(bar)
 
             for name, value in zip(perso.names, perso.values):
-                fmt = "|{0:^15}| {1:100}|\n".format(str(name), str(value))
-                msg += fmt
+                lines = splitLength(value, 40)
+                fmt.add_line("|{0:^15}| {1:40} |".format(str(name), str(lines[0])))
+                del lines[0]
 
-            msg += bar + "```"
+                for line in lines:
+                    fmt.add_line("|{0:^15}| {1:40} |".format(str(""), str(line)))
+                fmt.add_line("|{0:^15}| {1:40} |".format(str(""), str("")))
+
+            fmt.add_line(bar)
+            fmt.close_page()
 
             fehEmbed = discord.Embed()
             fehEmbed.set_author(name = user.name + " ({})".format(user.id), icon_url = user.avatar_url)
@@ -1305,7 +1317,13 @@ class FEH:
             fehEmbed.colour = 0x3498db
             fehEmbed.set_footer(text = "Requested by {0}".format(ctx.message.author.name), icon_url = ctx.message.author.avatar_url)
 
-            await self.bot.say(msg, embed = fehEmbed)
+            fmtEmbed = discord.Embed()
+            fmtEmbed.colour = 0x3498db
+
+            await self.bot.say(embed = fehEmbed)
+            for page in fmt.pages:
+                fmtEmbed.description = page
+                await self.bot.say(embed = fmtEmbed)
             
         except KeyError as e:
             tmp = await self.bot.say("```py\n{}: {}\n```".format(type(e).__name__, e))
