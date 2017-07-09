@@ -3,7 +3,7 @@ Bienvenue sur le serveur de la Communauté de la **Confrérie des Flammes** !!
 Nous avons instauré sur ce serveur un règlement pour faire en sorte que tout se passe au mieux pour tous les membres de la communauté.
 
 Quelques règles de bonne conduite :
-```css
+```md
 [>](1) Soyez respectueux.
 [>](2) Lisez les messages épinglés quand vous entrez dans un salon (quand il y en a). Respectez les différents salons et utilisez-les de façon appropriée. Ne soyez pas hors-sujet et prenez en compte ce que les gens disent avant de débarquer avec un hors-sujet total.
 [>](3) Ne soyez pas haineux. On est ici pour passer un bon moment. Twitter est un meilleur endroit pour raconter comment vous détestez tout le monde.
@@ -11,7 +11,7 @@ Quelques règles de bonne conduite :
 [>](5) On ne tolère aucun écart de comportement envers les femmes, les filles et les e-girls.
 ```
 Ce qui est interdit :
-```css
+```md
 [>](6) Spam des entrées/sorties des chans vocaux.
 [>](7) Ping Modérateurs et utilisation de .report abusifs (sans raison)
 [>](8) Tout ce qui est nsfw ou images non appropriés pour les plus jeunes.
@@ -31,8 +31,8 @@ Ce qui est interdit :
 [>](22) Les plans drague, plan cul et autres... Ce n'est pas un site de rencontre ici !
 [>](23) Les disputes interpersonnelles. Si vous avez besoin d'un médiateur ou si le problème est grave, vous pouvez vous en référer à la modération.
 ```
-```scheme
-[>] Dans le cas où vous seriez ban, vous consentez à ce que votre IP soit diffusée aux membres de l'équipe du serveur.
+```md
+[>](24) Dans le cas où vous seriez ban, vous consentez à ce que votre IP soit diffusée aux membres de l'équipe du serveur.
 ```
 
 *L'équipe de modération se réserve le droit de rajouter des règles à tout moment.*
