@@ -10,6 +10,7 @@ Quelques règles de bonne conduite :
 [>](4) Respectez l'autorité des modérateurs. Ils ne sont pas choisis pour rien et prennent des décisions dans le but d'assurer une bonne ambiance et une bonne entente sur le serveur. Ne remettez donc pas leurs décisions en question, qu'elles vous plaisent ou non.
 [>](5) On ne tolère aucun écart de comportement envers les femmes, les filles et les e-girls.
 ```
+--
 Ce qui est interdit :
 ```md
 [>](6) Spam des entrées/sorties des chans vocaux.

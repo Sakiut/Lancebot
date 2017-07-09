@@ -43,7 +43,7 @@ def get_user_roles(user):
 def getServerRules():
 	"""Récupère les règles du serveur depuis le fichier où elles sont enregistrées"""
 
-	fileName = './rules.txt'
+	fileName = './rules.md'
 	with open(fileName) as f: rulesLines = f.read()
 
 	return rulesLines
@@ -252,7 +252,7 @@ def dateConverter(date:str):
 #####################################################################################################################################################
 
 def getSplittedRules():
-	FileName = './rules.txt'
+	FileName = './rules.md'
 	with open(FileName) as f: lines = f.readlines()
 
 	Split = []

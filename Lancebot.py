@@ -623,11 +623,13 @@ Vous êtes prié de vous rendre sur le serveur dans les plus brefs délais et de
 
             if ctx.message.author.server_permissions.manage_messages == True:
                 if line == "all":
-                    await self.bot.send_message(user, rules)
+                    rules = rules.split("--\n")
+                    await self.bot.send_message(user, rules[0])
+                    await self.bot.send_message(user, rules[1])
                 else:
                     try:
                         base = "*Extrait du règlement :*"
-                        if line >= 6:
+                        if line >= 6 and line < 24:
                             base += "\nCe qui est interdit :"
                         msg = base + "\n```css\n" + rulesLines[line] + "\n```"
                     except IndexError as e:
