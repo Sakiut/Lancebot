@@ -11,6 +11,7 @@ class User:
 		self.pseudo = str(pseudo)
 		self.names = []
 		self.values = []
+		self.icon = None
 
 	def add(self, name, value):
 		self.names.append(name)
@@ -31,6 +32,9 @@ class User:
 			del self.values[key]
 		else:
 			raise KeyError("Entrée introuvable")
+
+	def setIcon(self, url):
+		self.icon = url
 
 def dataUpdate(data, objet, id):
 	dt = {str(id):objet}

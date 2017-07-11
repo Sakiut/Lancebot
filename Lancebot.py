@@ -631,7 +631,7 @@ Vous êtes prié de vous rendre sur le serveur dans les plus brefs délais et de
                         base = "*Extrait du règlement :*"
                         if line >= 6 and line < 24:
                             base += "\nCe qui est interdit :"
-                        msg = base + "\n```css\n" + rulesLines[line] + "\n```"
+                        msg = base + "\n```md\n" + rulesLines[line] + "\n```"
                     except IndexError as e:
                         raise IndexError("Cette règle n'existe pas")
                     await self.bot.send_message(user, msg)
@@ -1248,6 +1248,35 @@ class FEH:
             await self.bot.delete_message(tmp)
 
     @commands.command(pass_context=True, no_pm=True)
+    async def fehseticon(self, ctx, icon_url:str):
+        """Ajoute une url d'icône à votre profil.
+        Rappel : URL = Hyperlien = lien = "http://exemple.com/nomdemonicone.img"
+
+        L'icône que vous avez choisie doit être entrée sous forme d'url conduisant 
+        directementà l'image en question. Elle n'est pas téléchargée par le bot 
+        et doit donc rester hébergée sur l'url que vous avez indiquée.
+
+        Aucune donnée n'est filtrée, merci de respecter le règlement du serveur 
+        pour une bonne entente générale."""
+
+        await self.bot.delete_message(ctx.message)
+
+        try:
+            perso = feh.getFromData(self.data, ctx.message.author.id)
+            perso.setIcon(icon_url)
+            feh.dataUpdate(self.data, perso, ctx.message.author.id)
+            feh.dataSave(self.data)
+
+            tmp = await self.bot.say("```\nProfil de {}, ID {} mis à jour\n```".format(perso.pseudo, str(ctx.message.author.id)))
+            await asyncio.sleep(5)
+            await self.bot.delete_message(tmp)
+
+        except KeyError as e:
+            tmp = await self.bot.say("```py\n{}: {}\n```".format(type(e).__name__, e))
+            await asyncio.sleep(5)
+            await self.bot.delete_message(tmp)
+
+    @commands.command(pass_context=True, no_pm=True)
     async def fehremove(self, ctx, name):
         """Retire une information de votre profil
         
@@ -1318,6 +1347,9 @@ class FEH:
             fehEmbed.add_field(name = "Pseudo in-game", value = perso.pseudo, inline = False)
             fehEmbed.colour = 0x3498db
             fehEmbed.set_footer(text = "Requested by {0}".format(ctx.message.author.name), icon_url = ctx.message.author.avatar_url)
+
+            if perso.icon != None:
+                fehEmbed.set_thumbnail(url = perso.icon)
 
             fmtEmbed = discord.Embed()
             fmtEmbed.colour = 0x3498db
