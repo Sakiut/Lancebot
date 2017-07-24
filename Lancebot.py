@@ -223,12 +223,14 @@ class Vote:
             self.subject = subject
             self.Requester = ctx.message.author
             self.VoteState = True
+            self.Voters = []
             self.oui = 0
             self.non = 0
 
             self.VoteEmbed = discord.Embed()
             self.VoteEmbed.title = "Vote : " + self.subject
             self.VoteEmbed.colour = 0x3498db
+            self.VoteEmbed.description = "_ _"
             self.VoteEmbed.set_footer(text = "Requested by {0}".format(self.Requester.name), icon_url = self.Requester.avatar_url)
             self.VoteEmbed.add_field(name = "✔", value = self.oui)
             self.VoteEmbed.add_field(name = "✖", value = self.non)
@@ -253,6 +255,7 @@ class Vote:
             self.VoteEmbed.title = "Vote : " + self.subject + " [TERMINÉ]"
             await self.bot.edit_message(self.Mess, embed=self.VoteEmbed)
             await self.bot.clear_reactions(self.Mess)
+            self.VoteState = None
         else:
             tmp = await self.bot.say('Aucun vote en cours')
             await asyncio.sleep(5)
