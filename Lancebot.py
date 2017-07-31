@@ -103,12 +103,9 @@ class VoiceState:
             await self.play_next_song.wait()
 
 class Anime:
-    """Commandes de recherche d'animes et de mangas"""
 
     def __init__(self,bot):
-
         self.bot = bot
-        self.voice_states = {}
         self.token = None
         self.params = {
             "grant_type":"client_credentials",
@@ -116,91 +113,213 @@ class Anime:
             "client_secret": getAniClientSecret()
         }
 
-    @commands.command(pass_context=True, no_pm=False)
-    async def anime(self, ctx, *, anime:str):
-        """[EN] Rechercher des informations sur un anime"""
+    @commands.group(pass_context=True)
+    async def anilist(self, ctx):
+        """Commandes de requêtes d'informations sur des animes et mangas
+        de la base de données d'Anilist.
+        Langue de la base de données : EN
+
+        Utilisation :
+            .anilist anime <anime à rechercher>
+            .anilist manga <manga à rechercher>"""
+
+        if ctx.invoked_subcommand is None:
+            await self.bot.delete_message(ctx.message)
+            await self.bot.say("```md\nSyntaxe invalide. Voir .help anilist pour plus d'informations sur comment utiliser cette commande.\n```")
+
+    @anilist.command(pass_context=True, no_pm=False)
+    async def anime(self, ctx, *, anime : str):
+        """Récupère les informations concernant un anime
+        Base de données utilisée : AniList.co
+        Langue de la base de données : EN"""
+
+        await self.bot.delete_message(ctx.message)
+        tmp = await self.bot.say('Processing request')
+
+        if self.token == None:
+            self.token = anilist.auth(self.params)
 
         try:
-            await self.bot.delete_message(ctx.message)
-            tmp = await self.bot.say('Processing request')
-            
-            if self.token == None:
-                self.token = anilist.auth(self.params)
-
-            data = anilist.getAnimeInfo(anime, self.token)
-
-            AnimeEmbed = discord.Embed()
-            AnimeEmbed.title = str(data['title_english']) + " | " + str(data['title_japanese']) + " (" + str(data['id']) + ")"
-            AnimeEmbed.colour = 0x3498db
-            AnimeEmbed.set_thumbnail(url=data["image_url_lge"])
-            AnimeEmbed.add_field(name = "Type", value = data["type"])
-            AnimeEmbed.add_field(name = "Episodes", value = data['total_episodes'])
-            AnimeEmbed.add_field(name = "Source", value = data['source'])
-            AnimeEmbed.add_field(name = "Status", value = data['airing_status'])
-            AnimeEmbed.add_field(name = "Genre(s)", value = anilist.getAnimeGenres(data), inline = False)
-            AnimeEmbed.add_field(name = "Episode Length", value = str(data['duration']) + " mins/ep")
-            AnimeEmbed.add_field(name = "Score", value = str(data['average_score']) + " / 100")
-            AnimeEmbed.add_field(name = "Synopsis", value = anilist.formatAnimeDescription(data), inline = False)
-            AnimeEmbed.set_footer(text = anilist.formatAnimeDate(data))
-
+            results = anilist.getAnimes(anime, self.token)
+            results = results[:9]
+        except KeyError as e:
             await self.bot.delete_message(tmp)
-            await self.bot.say(embed=AnimeEmbed)
-
-        except AttributeError:
-            await self.bot.delete_message(tmp)
-            await self.bot.say("```py\nAnime not found\n```")
-        except IndexError:
-            await self.bot.delete_message(tmp)
-            await self.bot.say("```py\nWe got a problem with this anime, please try another\n```")
-        except Exception as e:
-            fmt = 'An error occurred while processing this request: ```py\n{}: {}\n```'
-            await self.bot.delete_message(tmp)
+            fmt = '```py\n{}: {}\n```'
             await self.bot.send_message(ctx.message.channel, fmt.format(type(e).__name__, e))
+            return
 
-    @commands.command(pass_context=True, no_pm=False)
-    async def manga(self, ctx, *, manga:str):
-        """[EN] Rechercher des informations sur un manga"""
+        ResultsEmbed = discord.Embed()
+        ResultsEmbed.title = "Choisissez parmi ces résultats :"
+        ResultsEmbed.colour = 0x3498db
+        ResultsEmbed.description = ""
+        ResultsEmbed.set_footer(text = anime)
+
+        i = 0
+        for x in results:
+            i += 1
+            j = str(i)
+            if i > 9:
+                break
+            else:
+                ResultsEmbed.description += "[{}]() - {} - {}\n".format(j, x[0], x[1])
+
+        await self.bot.delete_message(tmp)
+        resultsMessage = await self.bot.say(embed=ResultsEmbed)
+
+        emotes = [
+            u"\u0031\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0032\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0033\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0034\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0035\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0036\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0037\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0038\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0039\N{COMBINING ENCLOSING KEYCAP}"
+        ]
+
+        listing = []
+        for emote, title in zip(emotes, results):
+            dc = {emote:title}
+            listing.append(dc)
+
+        for x in range(0, len(results)):
+            await self.bot.add_reaction(resultsMessage, emotes[x])
+
+        await asyncio.sleep(1)
+        res = await self.bot.wait_for_reaction(emotes, message=resultsMessage)
+        react = res.reaction.emoji
+        await self.bot.clear_reactions(resultsMessage)
+        await self.bot.delete_message(resultsMessage)
+
+        for l in listing:
+            try:
+                title = l[react]
+            except KeyError:
+                continue
+
+        index = results.index(title)
+
+        tmp = await self.bot.say("Processing request for {}".format(title))
+
+        data = anilist.getAnimeInfo(anime, self.token, int(index))
+
+        AnimeEmbed = discord.Embed()
+        AnimeEmbed.title = str(data['title_english']) + " | " + str(data['title_japanese']) + " (" + str(data['id']) + ")"
+        AnimeEmbed.colour = 0x3498db
+        AnimeEmbed.set_thumbnail(url=data["image_url_lge"])
+        AnimeEmbed.add_field(name = "Type", value = data["type"])
+        AnimeEmbed.add_field(name = "Episodes", value = data['total_episodes'])
+        AnimeEmbed.add_field(name = "Source", value = data['source'])
+        AnimeEmbed.add_field(name = "Status", value = data['airing_status'].capitalize())
+        AnimeEmbed.add_field(name = "Genre(s)", value = anilist.getAnimeGenres(data), inline = False)
+        AnimeEmbed.add_field(name = "Episode Length", value = str(data['duration']) + " mins/ep")
+        AnimeEmbed.add_field(name = "Score", value = str(data['average_score']) + " / 100")
+        AnimeEmbed.add_field(name = "Synopsis", value = anilist.formatAnimeDescription(data), inline = False)
+        AnimeEmbed.set_footer(text = anilist.formatAnimeDate(data))
+
+        await self.bot.delete_message(tmp)
+        await self.bot.say(embed=AnimeEmbed)
+
+    @anilist.command(pass_context=True, no_pm=False)
+    async def manga(self, ctx, *, anime : str):
+        """Récupère les informations concernant un manga
+        Base de données utilisée : AniList.co
+        Langue de la base de données : EN"""
+
+        await self.bot.delete_message(ctx.message)
+        tmp = await self.bot.say('Processing request')
+
+        if self.token == None:
+            self.token = anilist.auth(self.params)
 
         try:
-            await self.bot.delete_message(ctx.message)
-            tmp = await self.bot.say('Processing request')
-
-            if self.token == None:
-                self.token = anilist.auth(self.params)
-
-            data = anilist.getMangaInfo(manga, self.token)
-
-            if data['total_volumes'] == 0:
-                data['total_volumes'] = '-'
-
-            if data['total_chapters'] == 0:
-                data['total_chapters'] = '-'
-
-            MangaEmbed = discord.Embed()
-            MangaEmbed.title = str(data['title_english']) + " | " + str(data['title_japanese']) + "\n(" + str(data['id']) + ")"
-            MangaEmbed.colour = 0x3498db
-            MangaEmbed.set_thumbnail(url=data['image_url_lge'])
-            MangaEmbed.add_field(name = 'Type', value = data['type'])
-            MangaEmbed.add_field(name = 'Volumes', value = data['total_volumes'])
-            MangaEmbed.add_field(name = 'Chapters', value = data['total_chapters'])
-            MangaEmbed.add_field(name = 'Status', value = data["publishing_status"])
-            MangaEmbed.add_field(name = 'Genre(s)', value = anilist.getAnimeGenres(data), inline = False)
-            MangaEmbed.add_field(name = 'Score', value = str(data['average_score']) + " / 100")
-            MangaEmbed.add_field(name = "Synopsis", value = anilist.formatAnimeDescription(data), inline = False)
-            MangaEmbed.set_footer(text = anilist.formatAnimeDate(data))
-
+            results = anilist.getMangas(anime, self.token)
+            results = results[:9]
+        except KeyError as e:
             await self.bot.delete_message(tmp)
-            await self.bot.say(embed=MangaEmbed)
-        except AttributeError:
-            await self.bot.delete_message(tmp)
-            await self.bot.say("```py\nManga not found\n```")
-        except IndexError:
-            await self.bot.delete_message(tmp)
-            await self.bot.say("```py\nWe got a problem with this manga, please try another\n```")
-        except Exception as e:
-            fmt = 'An error occurred while processing this request: ```py\n{}: {}\n```'
-            await self.bot.delete_message(tmp)
+            fmt = '```py\n{}: {}\n```'
             await self.bot.send_message(ctx.message.channel, fmt.format(type(e).__name__, e))
+            return
+
+        ResultsEmbed = discord.Embed()
+        ResultsEmbed.title = "Choisissez parmi ces résultats :"
+        ResultsEmbed.colour = 0x3498db
+        ResultsEmbed.description = ""
+        ResultsEmbed.set_footer(text = anime)
+
+        i = 0
+        for x in results:
+            i += 1
+            j = str(i)
+            if i > 9:
+                break
+            else:
+                ResultsEmbed.description += "[{}]() - {} - {}\n".format(j, x[0], x[1])
+
+        await self.bot.delete_message(tmp)
+        resultsMessage = await self.bot.say(embed=ResultsEmbed)
+
+        emotes = [
+            u"\u0031\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0032\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0033\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0034\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0035\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0036\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0037\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0038\N{COMBINING ENCLOSING KEYCAP}", 
+            u"\u0039\N{COMBINING ENCLOSING KEYCAP}"
+        ]
+
+        listing = []
+        for emote, title in zip(emotes, results):
+            dc = {emote:title}
+            listing.append(dc)
+
+        for x in range(0, len(results)):
+            await self.bot.add_reaction(resultsMessage, emotes[x])
+
+        await asyncio.sleep(1)
+        res = await self.bot.wait_for_reaction(emotes, message=resultsMessage)
+        react = res.reaction.emoji
+        await self.bot.clear_reactions(resultsMessage)
+        await self.bot.delete_message(resultsMessage)
+
+        for l in listing:
+            try:
+                title = l[react]
+            except KeyError:
+                continue
+
+        index = results.index(title)
+
+        tmp = await self.bot.say("Processing request for {}".format(title))
+
+        data = anilist.getMangaInfo(anime, self.token, int(index))
+
+        if data['total_volumes'] == 0:
+            data['total_volumes'] = '-'
+
+        if data['total_chapters'] == 0:
+            data['total_chapters'] = '-'
+
+        MangaEmbed = discord.Embed()
+        MangaEmbed.title = str(data['title_english']) + " | " + str(data['title_japanese']) + "\n(" + str(data['id']) + ")"
+        MangaEmbed.colour = 0x3498db
+        MangaEmbed.set_thumbnail(url=data['image_url_lge'])
+        MangaEmbed.add_field(name = 'Type', value = data['type'])
+        MangaEmbed.add_field(name = 'Volumes', value = str(data['total_volumes']))
+        MangaEmbed.add_field(name = 'Chapters', value = str(data['total_chapters']))
+        MangaEmbed.add_field(name = 'Status', value = data["publishing_status"].capitalize())
+        MangaEmbed.add_field(name = 'Genre(s)', value = anilist.getAnimeGenres(data), inline = False)
+        MangaEmbed.add_field(name = 'Score', value = str(data['average_score']) + " / 100")
+        MangaEmbed.add_field(name = "Synopsis", value = anilist.formatAnimeDescription(data), inline = False)
+        MangaEmbed.set_footer(text = anilist.formatAnimeDate(data))
+
+        await self.bot.delete_message(tmp)
+        await self.bot.say(embed=MangaEmbed)
+
 class Vote:
 
     def __init__(self,bot):
@@ -213,8 +332,20 @@ class Vote:
         self.oui = None
         self.non = None
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def votestart(self, ctx, *, subject : str):
+    @commands.group(pass_context=True)
+    async def vote(self, ctx):
+        """Commandes de vote.
+
+        Utilisation :
+            .vote start <sujet du vote>
+            .vote stop"""
+
+        if ctx.invoked_subcommand is None:
+            await self.bot.delete_message(ctx.message)
+            await self.bot.say("```md\nSyntaxe invalide. Voir .help vote pour plus d'informations sur comment utiliser cette commande.\n```")
+
+    @vote.command(pass_context=True, no_pm=True)
+    async def start(self, ctx, *, subject : str):
         """Démarrer un vote"""
 
         await self.bot.delete_message(ctx.message)
@@ -230,23 +361,53 @@ class Vote:
             self.VoteEmbed = discord.Embed()
             self.VoteEmbed.title = "Vote : " + self.subject
             self.VoteEmbed.colour = 0x3498db
-            self.VoteEmbed.description = "_ _"
             self.VoteEmbed.set_footer(text = "Requested by {0}".format(self.Requester.name), icon_url = self.Requester.avatar_url)
-            self.VoteEmbed.add_field(name = "✔", value = self.oui)
-            self.VoteEmbed.add_field(name = "✖", value = self.non)
+            self.VoteEmbed.add_field(name = "✅", value = self.oui)
+            self.VoteEmbed.add_field(name = "❎", value = self.non)
 
             mess = await self.bot.say(embed=self.VoteEmbed)
             self.Mess = mess
 
-            await self.bot.add_reaction(mess, "✔")
-            await self.bot.add_reaction(mess, "✖")
+            await self.bot.add_reaction(mess, "✅")
+            await self.bot.add_reaction(mess, "❎")
+            await asyncio.sleep(1)
+
+            while self.VoteState == True:
+                res = await self.bot.wait_for_reaction(["✅","❎"], message = self.Mess)
+                user = res.user
+                reaction = res.reaction
+
+                if user not in self.Voters:
+                    if reaction.emoji == "✅":
+                        await self.bot.remove_reaction(reaction.message, "✅", user)
+                        self.Voters.append(user)
+                        self.oui += 1
+                        self.VoteEmbed.set_field_at(0, name = "✅", value = self.oui)
+
+                        await self.bot.edit_message(self.Mess, embed=self.VoteEmbed)
+
+                    elif reaction.emoji == "❎":
+                        await self.bot.remove_reaction(reaction.message, "❎", user)
+                        self.Voters.append(user)
+                        self.non += 1
+                        self.VoteEmbed.set_field_at(1, name = "❎", value = self.non)
+
+                        await self.bot.edit_message(self.Mess, embed=self.VoteEmbed)
+                    else:
+                        await self.bot.remove_reaction(reaction.message, reaction.emoji, user)
+                else:
+                    await self.bot.remove_reaction(reaction.message, reaction.emoji, user)
+                    tmp = await self.bot.send_message(self.Mess.channel, "{0.mention} Vous avez déjà voté".format(user))
+                    await asyncio.sleep(5)
+                    await self.bot.delete_message(tmp)
+
         else:
             tmp = await self.bot.say('Vote déjà en cours')
             await asyncio.sleep(5)
             await self.bot.delete_message(tmp)
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def votestop(self, ctx):
+    @vote.command(pass_context=True, no_pm=True)
+    async def stop(self, ctx):
         """Arrêter le vote en cours
         Utilisable uniquement par le demandeur du vote déjà en cours."""
 
@@ -260,35 +421,6 @@ class Vote:
             tmp = await self.bot.say('Aucun vote en cours')
             await asyncio.sleep(5)
             await self.bot.delete_message(tmp)
-
-    @bot.event
-    async def on_reaction_add(self, reaction, user):
-        if reaction.message.id == self.Mess.id:
-            if user == bot.user:
-                return
-            elif user not in self.Voters:
-                if reaction.emoji == "✔":
-                    await self.bot.remove_reaction(reaction.message, "✔", user)
-                    self.Voters.append(user)
-                    self.oui += 1
-                    self.VoteEmbed.set_field_at(0, name = "✔", value = self.oui)
-
-                    await self.bot.edit_message(self.Mess, embed=self.VoteEmbed)
-
-                elif reaction.emoji == "✖":
-                    await self.bot.remove_reaction(reaction.message, "✖", user)
-                    self.Voters.append(user)
-                    self.non += 1
-                    self.VoteEmbed.set_field_at(1, name = "✖", value = self.non)
-
-                    await self.bot.edit_message(self.Mess, embed=self.VoteEmbed)
-                else:
-                    await self.bot.remove_reaction(reaction.message, reaction.emoji, user)
-            else:
-                await self.bot.remove_reaction(reaction.message, reaction.emoji, user)
-                tmp = await self.bot.send_message(self.Mess.channel, "{0.mention} Vous avez déjà voté".format(user))
-                await asyncio.sleep(5)
-                await self.bot.delete_message(tmp)
 
 class Admin:
     """Commandes d'administration et de gestion"""
@@ -1101,8 +1233,31 @@ class FEH:
         self.bot = bot
         self.data = feh.dataGet()
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def fehcreate(self, ctx, pseudo):
+    @commands.group(pass_context=True, no_pm=True)
+    async def feh(self, ctx):
+        """Commandes Fire Emblem Heroes
+
+        Ces commandes vous permettront de gérer et de consulter des profils utilisateur appartenant
+        aux membres du serveur.
+
+        Ces profils sont remplis par les utilisateurs - donc par vous - sans aucun filtre. Merci donc
+        de respecter le règlement du serveur pour une bonne entente générale, et de signaler toute
+        donnée non appropriée sur un profil via la commande .report (anonyme)
+
+        Utilisation des commandes :
+            .feh create <pseudo du compte FEH>
+            .feh delete
+            .feh add [nom de la case à ajouter] <donnée à mettre dans la case>
+            .feh remove [nom de la case à supprimer]
+            .feh seticon <url de l'icône à ajouter>
+            .feh info <pseudo Discord du profil à consulter>"""
+
+        if ctx.invoked_subcommand is None:
+            await self.bot.delete_message(ctx.message)
+            await self.bot.say("```md\nSyntaxe invalide. Voir .help feh pour plus d'informations sur comment utiliser cette commande.\n```")
+
+    @feh.command(pass_context=True, no_pm=True)
+    async def create(self, ctx, pseudo):
         """Créer son profil
         
         Commande qui crée un profil utilisateur FEH qui sera accessible à tous les membres du serveur.
@@ -1121,8 +1276,8 @@ class FEH:
         await asyncio.sleep(5)
         await self.bot.delete_message(tmp)
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def fehdelete(self, ctx):
+    @feh.command(pass_context=True, no_pm=True)
+    async def delete(self, ctx):
         """Supprime votre profil"""
 
         await self.bot.delete_message(ctx.message)
@@ -1140,8 +1295,8 @@ class FEH:
             await asyncio.sleep(5)
             await self.bot.delete_message(tmp)
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def fehadd(self, ctx, name, *, value):
+    @feh.command(pass_context=True, no_pm=True)
+    async def add(self, ctx, name, *, value):
         """Ajoute une information à votre profil
         
         Vous devez avoir déjà créé un profil avec .fehcreate pour utiliser cette commande.
@@ -1168,8 +1323,8 @@ class FEH:
             await asyncio.sleep(5)
             await self.bot.delete_message(tmp)
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def fehseticon(self, ctx, icon_url:str):
+    @feh.command(pass_context=True, no_pm=True)
+    async def seticon(self, ctx, icon_url:str):
         """Ajoute une url d'icône à votre profil.
         Rappel : URL = Hyperlien = lien = "http://exemple.com/nomdemonicone.img"
 
@@ -1197,8 +1352,8 @@ class FEH:
             await asyncio.sleep(5)
             await self.bot.delete_message(tmp)
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def fehremove(self, ctx, name):
+    @feh.command(pass_context=True, no_pm=True)
+    async def remove(self, ctx, name):
         """Retire une information de votre profil
         
         Vous devez avoir déjà créé un profil avec .fehcreate pour utiliser cette commande.
@@ -1225,8 +1380,8 @@ class FEH:
             await asyncio.sleep(5)
             await self.bot.delete_message(tmp)
 
-    @commands.command(pass_context=True, no_pm=True)
-    async def fehinfo(self, ctx, *, user=None):
+    @feh.command(pass_context=True, no_pm=True)
+    async def info(self, ctx, *, user=None):
         """Montre la fiche d'informations de la personne choisie.
 
         Les profils sont remplis sans filtre, merci de signaler tout problème, manquement
